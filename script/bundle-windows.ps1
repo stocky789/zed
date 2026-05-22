@@ -118,6 +118,7 @@ function PrepareForBundle {
     if (Test-Path "$innoDir") {
         Remove-Item -Path "$innoDir" -Recurse -Force
     }
+    New-Item -Path "$env:ZED_WORKSPACE\target" -ItemType Directory -Force
     New-Item -Path "$innoDir" -ItemType Directory -Force
     Copy-Item -Path "$env:ZED_WORKSPACE\crates\zed\resources\windows\*" -Destination "$innoDir" -Recurse -Force
     New-Item -Path "$innoDir\make_appx" -ItemType Directory -Force
