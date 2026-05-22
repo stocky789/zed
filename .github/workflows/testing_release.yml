@@ -75,18 +75,17 @@ jobs:
           path: target/zed-remote-server-windows-${{ matrix.arch }}.zip
           if-no-files-found: error
 
-  publish:
+  publish_linux:
     needs:
       - linux
-      - windows
-    if: always() && needs.linux.result == 'success' && needs.windows.result == 'success'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: zed-*linux-*
           path: artifacts
           merge-multiple: true
-      - name: Publish testing release
+      - name: Publish Linux testing release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: testing-latest
@@ -95,7 +94,7 @@ jobs:
           gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" || true
           gh release create "$TAG" artifacts/* \
             --title "Testing latest" \
-            --notes "Automated build from testing at $GITHUB_SHA." \
+            --notes "Automated Linux build from testing at $GITHUB_SHA. Windows assets are built separately and may be added later." \
             --target "$GITHUB_SHA" \
             --prerelease \
             --latest=false
