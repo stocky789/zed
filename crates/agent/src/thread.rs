@@ -3005,7 +3005,7 @@ Combine these chunk summaries into one compact context checkpoint:
         let max_estimated_tokens_per_chunk = ((max_tokens as f64) * 0.6) as usize;
         let mut chunks = Vec::new();
         let mut chunk = Vec::new();
-        let mut chunk_estimated_tokens = 0;
+        let mut chunk_estimated_tokens: usize = 0;
 
         for message in messages_to_compact {
             let message_tokens = Self::estimated_request_tokens(&message.to_request());
