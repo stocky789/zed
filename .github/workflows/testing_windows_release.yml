@@ -37,7 +37,7 @@ jobs:
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: testing-windows-${{ matrix.arch }}
+          shared-key: testing-windows-workspace-${{ matrix.arch }}
           cache-on-failure: true
           cache-workspace-crates: true
       - name: Enable long paths

@@ -30,7 +30,7 @@ jobs:
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: testing-linux-${{ matrix.arch }}
+          shared-key: testing-linux-workspace-${{ matrix.arch }}
           cache-on-failure: true
           cache-workspace-crates: true
       - name: Install Linux dependencies
