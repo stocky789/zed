@@ -11,6 +11,22 @@ Welcome to Zed, a high-performance, multiplayer code editor from the creators of
 
 On macOS, Linux, and Windows you can [download Zed directly](https://zed.dev/download) or install Zed via your local package manager ([macOS](https://zed.dev/docs/installation#macos)/[Linux](https://zed.dev/docs/linux#installing-via-a-package-manager)/[Windows](https://zed.dev/docs/windows#package-managers)).
 
+#### Installing this fork's `testing` branch
+
+The `testing` branch builds Linux and Windows release artifacts with GitHub Actions and publishes them to the `testing-latest` GitHub release.
+
+On Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/stocky789/zed/testing/script/install-testing.sh | sh
+```
+
+On Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/stocky789/zed/testing/script/install-testing.ps1 | iex
+```
+
 Other platforms are not yet available:
 
 - Web ([tracking issue](https://github.com/zed-industries/zed/issues/5396))
