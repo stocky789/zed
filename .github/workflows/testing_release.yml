@@ -1,0 +1,101 @@
+name: testing_release
+
+on:
+  push:
+    branches:
+      - testing
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: testing-release
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    env:
+      CARGO_INCREMENTAL: 0
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        run: ./script/linux
+      - name: Download WASI SDK
+        run: ./script/download-wasi-sdk
+      - name: Build Linux bundle
+        run: ./script/bundle-linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zed-linux-${{ matrix.arch }}.tar.gz
+          path: target/release/zed-linux-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zed-remote-server-linux-${{ matrix.arch }}.gz
+          path: target/zed-remote-server-linux-${{ matrix.arch }}.gz
+          if-no-files-found: error
+
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: windows-2022
+    runs-on: ${{ matrix.runner }}
+    env:
+      CARGO_INCREMENTAL: 0
+      CI: ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+        shell: pwsh
+      - name: Build Windows installer
+        run: script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Zed-${{ matrix.arch }}.exe
+          path: target/Zed-${{ matrix.arch }}.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zed-remote-server-windows-${{ matrix.arch }}.zip
+          path: target/zed-remote-server-windows-${{ matrix.arch }}.zip
+          if-no-files-found: error
+
+  publish:
+    needs:
+      - linux
+      - windows
+    if: always() && needs.linux.result == 'success' && needs.windows.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish testing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: testing-latest
+        run: |
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" || true
+          gh release create "$TAG" artifacts/* \
+            --title "Testing latest" \
+            --notes "Automated build from testing at $GITHUB_SHA." \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --latest=false

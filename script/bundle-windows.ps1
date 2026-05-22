@@ -39,8 +39,36 @@ function Get-VSArch {
     }
 }
 
+function Get-VsDevShellPath {
+    $candidatePaths = @(
+        "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1",
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\Launch-VsDevShell.ps1",
+        "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\Launch-VsDevShell.ps1",
+        "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1"
+    )
+
+    foreach ($path in $candidatePaths) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        $installationPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        if ($installationPath) {
+            $path = Join-Path $installationPath "Common7\Tools\Launch-VsDevShell.ps1"
+            if (Test-Path $path) {
+                return $path
+            }
+        }
+    }
+
+    throw "Could not find Launch-VsDevShell.ps1 for Visual Studio 2022"
+}
+
 Push-Location
-& "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1" -Arch (Get-VSArch -Arch $Architecture) -HostArch (Get-VSArch -Arch $OSArchitecture)
+& (Get-VsDevShellPath) -Arch (Get-VSArch -Arch $Architecture) -HostArch (Get-VSArch -Arch $OSArchitecture)
 Pop-Location
 
 $target = "$Architecture-pc-windows-msvc"
