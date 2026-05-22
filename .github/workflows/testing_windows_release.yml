@@ -1,69 +1,71 @@
-name: testing_release
+name: testing_windows_release
 
 on:
-  push:
-    branches:
-      - testing
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: testing-release
+  group: testing-windows-release
   cancel-in-progress: true
 
 jobs:
-  linux:
+  windows:
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: x86_64
-            runner: ubuntu-24.04
+            runner: windows-2022
     runs-on: ${{ matrix.runner }}
     env:
       CARGO_INCREMENTAL: 0
-      CC: clang
-      CXX: clang++
+      CARGO_HOME: D:\c
+      CARGO_TARGET_DIR: D:\t
+      CI: ''
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: testing
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: testing-linux-${{ matrix.arch }}
+          shared-key: testing-windows-${{ matrix.arch }}
           cache-on-failure: true
-      - name: Install Linux dependencies
-        run: ./script/linux
-      - name: Download WASI SDK
-        run: ./script/download-wasi-sdk
-      - name: Build Linux bundle
-        run: ./script/bundle-linux
+      - name: Enable long paths
+        run: |
+          git config --system core.longpaths true
+          New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1 -PropertyType DWord -Force
+        shell: pwsh
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+        shell: pwsh
+      - name: Build Windows installer
+        run: script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
+        shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
-          name: zed-linux-${{ matrix.arch }}.tar.gz
-          path: target/release/zed-linux-${{ matrix.arch }}.tar.gz
+          name: Zed-${{ matrix.arch }}.exe
+          path: target/Zed-${{ matrix.arch }}.exe
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: zed-remote-server-linux-${{ matrix.arch }}.gz
-          path: target/zed-remote-server-linux-${{ matrix.arch }}.gz
+          name: zed-remote-server-windows-${{ matrix.arch }}.zip
+          path: target/zed-remote-server-windows-${{ matrix.arch }}.zip
           if-no-files-found: error
 
-  publish_linux:
+  publish_windows:
     needs:
-      - linux
+      - windows
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: zed-*linux-*
+          pattern: '*'
           path: artifacts
           merge-multiple: true
-      - name: Publish Linux testing release
+      - name: Upload Windows assets to testing release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: testing-latest
@@ -71,7 +73,7 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" \
               --title "Testing latest" \
-              --notes "Automated builds from the testing branch." \
+              --notes "Automated build from testing at $GITHUB_SHA." \
               --target "$GITHUB_SHA" \
               --prerelease \
               --latest=false
