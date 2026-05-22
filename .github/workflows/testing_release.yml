@@ -55,9 +55,16 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       CARGO_INCREMENTAL: 0
+      CARGO_HOME: D:\c
+      CARGO_TARGET_DIR: D:\t
       CI: ''
     steps:
       - uses: actions/checkout@v4
+      - name: Enable long paths
+        run: |
+          git config --system core.longpaths true
+          New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1 -PropertyType DWord -Force
+        shell: pwsh
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
         shell: pwsh

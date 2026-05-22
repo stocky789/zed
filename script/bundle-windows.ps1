@@ -26,7 +26,12 @@ $Architecture = if ($Architecture) {
     $OSArchitecture
 }
 
-$CargoOutDir = "./target/$Architecture-pc-windows-msvc/release"
+$CargoTargetDir = if ($env:CARGO_TARGET_DIR) {
+    $env:CARGO_TARGET_DIR
+} else {
+    "./target"
+}
+$CargoOutDir = Join-Path $CargoTargetDir "$Architecture-pc-windows-msvc/release"
 
 function Get-VSArch {
     param(
