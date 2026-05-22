@@ -13,7 +13,7 @@ On macOS, Linux, and Windows you can [download Zed directly](https://zed.dev/dow
 
 #### Installing this fork's `testing` branch
 
-The `testing` branch builds Linux and Windows release artifacts with GitHub Actions and publishes them to the `testing-latest` GitHub release.
+Linux and Windows release artifacts are built manually with GitHub Actions and published to the `testing-latest` GitHub release. Run `testing_release` for Linux and `testing_windows_release` for Windows when you want to refresh the installer assets.
 
 On Linux:
 

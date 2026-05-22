@@ -1,13 +1,6 @@
 name: testing_release
 
 on:
-  push:
-    branches:
-      - testing
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.github/workflows/testing_windows_release.yml'
   workflow_dispatch:
 
 permissions:
