@@ -1,11 +1,6 @@
 name: testing_windows_release
 
 on:
-  push:
-    branches:
-      - testing
-    paths:
-      - '.github/workflows/testing_windows_release.yml'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +8,7 @@ permissions:
 
 concurrency:
   group: testing-windows-release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   windows:
