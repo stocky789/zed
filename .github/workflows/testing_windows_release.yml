@@ -71,6 +71,7 @@ jobs:
       - name: Upload Windows assets to testing release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: testing-latest
         run: |
           if ! gh release view "$TAG" >/dev/null 2>&1; then
