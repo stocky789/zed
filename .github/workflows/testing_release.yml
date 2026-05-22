@@ -32,6 +32,7 @@ jobs:
         with:
           shared-key: testing-linux-${{ matrix.arch }}
           cache-on-failure: true
+          cache-workspace-crates: true
       - name: Install Linux dependencies
         run: ./script/linux
       - name: Download WASI SDK

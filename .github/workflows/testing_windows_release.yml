@@ -39,6 +39,7 @@ jobs:
         with:
           shared-key: testing-windows-${{ matrix.arch }}
           cache-on-failure: true
+          cache-workspace-crates: true
       - name: Enable long paths
         run: |
           git config --system core.longpaths true
