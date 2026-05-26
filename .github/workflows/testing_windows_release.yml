@@ -67,20 +67,40 @@ jobs:
             return $null
           }
 
+          function Find-VsInstallationPath {
+            $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+            if (Test-Path $vswhere) {
+              $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+              if ($installation) { return [string]$installation }
+            }
+            return "C:\Program Files\Microsoft Visual Studio\2022\BuildTools"
+          }
+
+          function Has-SpectreLibraries {
+            $installPath = Find-VsInstallationPath
+            if (-not (Test-Path $installPath)) { return $false }
+            $spectreLib = Get-ChildItem -Path $installPath -Recurse -Filter vcruntime.lib -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -match "[\\/]spectre[\\/]" } |
+              Select-Object -First 1
+            return $null -ne $spectreLib
+          }
+
           $existing = Find-VsDevShell
-          if ($existing) {
-            Write-Host "Visual Studio Build Tools already available at $existing"
+          if ($existing -and (Has-SpectreLibraries)) {
+            Write-Host "Visual Studio Build Tools already available at $existing with Spectre libraries"
             exit 0
           }
 
+          $installPath = Find-VsInstallationPath
           Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe
           $arguments = @(
             "--quiet",
             "--wait",
             "--norestart",
-            "--installPath", "C:\Program Files\Microsoft Visual Studio\2022\BuildTools",
+            "--installPath=$installPath",
             "--add", "Microsoft.VisualStudio.Workload.VCTools",
             "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "--add", "Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre",
             "--add", "Microsoft.VisualStudio.Component.Windows11SDK.26100",
             "--includeRecommended"
           )
@@ -92,16 +112,19 @@ jobs:
           }
 
           $installed = Find-VsDevShell
-          if (-not $installed) {
-            Write-Host "Visual Studio installer did not expose Launch-VsDevShell.ps1; dumping installer state"
+          if (-not $installed -or -not (Has-SpectreLibraries)) {
+            Write-Host "Visual Studio installer did not expose required build tools; dumping installer state"
             $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
             if (Test-Path $vswhere) {
               & $vswhere -all -products * -format json
             }
-            Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio" -Recurse -Filter Launch-VsDevShell.ps1 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-            throw "Visual Studio Build Tools installer completed, but Launch-VsDevShell.ps1 was still not found"
+            Get-ChildItem -Path (Find-VsInstallationPath) -Recurse -Filter Launch-VsDevShell.ps1 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+            Get-ChildItem -Path (Find-VsInstallationPath) -Recurse -Filter vcruntime.lib -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -match "[\\/]spectre[\\/]" } |
+              Select-Object -ExpandProperty FullName
+            throw "Visual Studio Build Tools installer completed, but required MSVC tools or Spectre libraries were still not found"
           }
-          Write-Host "Visual Studio Build Tools installed at $installed"
+          Write-Host "Visual Studio Build Tools installed at $installed with Spectre libraries"
         shell: powershell
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
