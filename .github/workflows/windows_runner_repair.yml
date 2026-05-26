@@ -33,7 +33,6 @@ jobs:
             "modify",
             "--installPath", "`"$installPath`"",
             "--quiet",
-            "--wait",
             "--norestart",
             "--add", "Microsoft.VisualStudio.Workload.VCTools",
             "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
