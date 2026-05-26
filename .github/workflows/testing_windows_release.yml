@@ -199,8 +199,14 @@ jobs:
           $ErrorActionPreference = "Stop"
           $env:PATH = "C:\Program Files\CMake\bin;$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
           Remove-Item Env:CI -ErrorAction SilentlyContinue
+          Remove-Item Env:RUSTC_WRAPPER -ErrorAction SilentlyContinue
+          Remove-Item Env:SCCACHE_DIR -ErrorAction SilentlyContinue
+          Remove-Item Env:SCCACHE_ERROR_LOG -ErrorAction SilentlyContinue
           rustc -V
           cargo -V
+          if ($env:RUSTC_WRAPPER) {
+            throw "RUSTC_WRAPPER should be unset for this workflow, but is $env:RUSTC_WRAPPER"
+          }
           script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
           '@ | Set-Content -Path .\run-zed-bundle.ps1 -Encoding UTF8
 
