@@ -9,7 +9,7 @@ on:
 jobs:
   label_community_champion:
     if: github.repository_owner == 'zed-industries'
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
       - name: Check if author is a community champion and apply label
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7

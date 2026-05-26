@@ -18,7 +18,7 @@ on:
         default: ''
 jobs:
   run_perf:
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - name: steps::checkout_repo
       uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -70,7 +70,7 @@ jobs:
         BASE: ${{ inputs.base }}
         HEAD: ${{ inputs.head }}
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: results.md
         path: results.md

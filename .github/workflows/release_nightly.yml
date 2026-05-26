@@ -11,7 +11,7 @@ on:
 jobs:
   check_nightly_tag:
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions')
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
     - name: steps::checkout_repo
       uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -35,7 +35,7 @@ jobs:
     needs:
     - check_nightly_tag
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions') && needs.check_nightly_tag.outputs.skip != 'true'
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     env:
       CC: clang
       CXX: clang++
@@ -92,7 +92,7 @@ jobs:
   bundle_linux_aarch64:
     needs:
     - run_tests_linux
-    runs-on: namespace-profile-8x32-ubuntu-2004-arm-m4
+    runs-on: ubuntu-22.04-arm
     env:
       CARGO_INCREMENTAL: 0
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
@@ -121,13 +121,13 @@ jobs:
     - name: ./script/bundle-linux
       run: ./script/bundle-linux
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-linux-aarch64.tar.gz
         path: target/release/zed-linux-aarch64.tar.gz
         if-no-files-found: error
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-remote-server-linux-aarch64.gz
         path: target/zed-remote-server-linux-aarch64.gz
@@ -136,7 +136,7 @@ jobs:
   bundle_linux_x86_64:
     needs:
     - run_tests_linux
-    runs-on: namespace-profile-32x64-ubuntu-2004
+    runs-on: ubuntu-22.04
     env:
       CARGO_INCREMENTAL: 0
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
@@ -165,13 +165,13 @@ jobs:
     - name: ./script/bundle-linux
       run: ./script/bundle-linux
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-linux-x86_64.tar.gz
         path: target/release/zed-linux-x86_64.tar.gz
         if-no-files-found: error
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-remote-server-linux-x86_64.gz
         path: target/zed-remote-server-linux-x86_64.gz
@@ -180,7 +180,7 @@ jobs:
   bundle_mac_aarch64:
     needs:
     - run_tests_linux
-    runs-on: namespace-profile-mac-large
+    runs-on: macos-latest
     env:
       CARGO_INCREMENTAL: 0
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
@@ -214,13 +214,13 @@ jobs:
     - name: run_bundling::bundle_mac::bundle_mac
       run: ./script/bundle-mac aarch64-apple-darwin
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: Zed-aarch64.dmg
         path: target/aarch64-apple-darwin/release/Zed-aarch64.dmg
         if-no-files-found: error
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-remote-server-macos-aarch64.gz
         path: target/zed-remote-server-macos-aarch64.gz
@@ -229,7 +229,7 @@ jobs:
   bundle_mac_x86_64:
     needs:
     - run_tests_linux
-    runs-on: namespace-profile-mac-large
+    runs-on: macos-latest
     env:
       CARGO_INCREMENTAL: 0
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
@@ -263,13 +263,13 @@ jobs:
     - name: run_bundling::bundle_mac::bundle_mac
       run: ./script/bundle-mac x86_64-apple-darwin
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: Zed-x86_64.dmg
         path: target/x86_64-apple-darwin/release/Zed-x86_64.dmg
         if-no-files-found: error
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-remote-server-macos-x86_64.gz
         path: target/zed-remote-server-macos-x86_64.gz
@@ -278,7 +278,7 @@ jobs:
   bundle_windows_aarch64:
     needs:
     - run_tests_linux
-    runs-on: self-32vcpu-windows-2022
+    runs-on: windows-2022
     env:
       CARGO_INCREMENTAL: 0
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
@@ -314,13 +314,13 @@ jobs:
       shell: pwsh
       working-directory: ${{ env.ZED_WORKSPACE }}
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: Zed-aarch64.exe
         path: target/Zed-aarch64.exe
         if-no-files-found: error
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-remote-server-windows-aarch64.zip
         path: target/zed-remote-server-windows-aarch64.zip
@@ -329,7 +329,7 @@ jobs:
   bundle_windows_x86_64:
     needs:
     - run_tests_linux
-    runs-on: self-32vcpu-windows-2022
+    runs-on: windows-2022
     env:
       CARGO_INCREMENTAL: 0
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
@@ -365,13 +365,13 @@ jobs:
       shell: pwsh
       working-directory: ${{ env.ZED_WORKSPACE }}
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: Zed-x86_64.exe
         path: target/Zed-x86_64.exe
         if-no-files-found: error
     - name: run_bundling::upload_artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: zed-remote-server-windows-x86_64.zip
         path: target/zed-remote-server-windows-x86_64.zip
@@ -381,7 +381,7 @@ jobs:
     needs:
     - run_tests_linux
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions')
-    runs-on: namespace-profile-32x64-ubuntu-2004
+    runs-on: ubuntu-22.04
     env:
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
       ZED_MINIDUMP_ENDPOINT: ${{ secrets.ZED_SENTRY_MINIDUMP_ENDPOINT }}
@@ -414,7 +414,7 @@ jobs:
     needs:
     - run_tests_linux
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions')
-    runs-on: namespace-profile-mac-large
+    runs-on: macos-latest
     env:
       ZED_CLIENT_CHECKSUM_SEED: ${{ secrets.ZED_CLIENT_CHECKSUM_SEED }}
       ZED_MINIDUMP_ENDPOINT: ${{ secrets.ZED_SENTRY_MINIDUMP_ENDPOINT }}
@@ -467,7 +467,7 @@ jobs:
     - bundle_windows_aarch64
     - bundle_windows_x86_64
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions')
-    runs-on: namespace-profile-4x8-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - id: generate-token
       name: steps::authenticate_as_zippy
@@ -482,7 +482,7 @@ jobs:
         clean: false
         fetch-tags: true
     - name: release::download_workflow_artifacts
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@v3
       with:
         path: ./artifacts/
     - name: ls -lR ./artifacts
@@ -538,7 +538,7 @@ jobs:
     - bundle_windows_aarch64
     - bundle_windows_x86_64
     if: failure()
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
     - name: release::send_slack_message
       run: 'curl -X POST -H ''Content-type: application/json'' --data "$(jq -n --arg text "$SLACK_MESSAGE" ''{"text": $text}'')" "$SLACK_WEBHOOK"'

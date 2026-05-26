@@ -34,7 +34,7 @@ jobs:
       (github.repository == 'zed-industries/zed' &&
       github.event.issue.state == 'open' &&
       (startsWith(github.event.label.name, '.contrib/good ') || startsWith(github.event.label.name, 'area:')))
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     steps:

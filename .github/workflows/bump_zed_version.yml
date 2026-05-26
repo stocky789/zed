@@ -11,7 +11,7 @@ on:
 jobs:
   resolve_versions:
     if: github.repository_owner == 'zed-industries'
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - id: generate-token
       name: steps::authenticate_as_zippy
@@ -85,7 +85,7 @@ jobs:
     needs:
     - resolve_versions
     if: inputs.target == 'all' || inputs.target == 'main'
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - id: generate-token
       name: steps::authenticate_as_zippy
@@ -126,7 +126,7 @@ jobs:
     needs:
     - resolve_versions
     if: inputs.target == 'all' || inputs.target == 'preview'
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - id: generate-token
       name: steps::authenticate_as_zippy
@@ -179,7 +179,7 @@ jobs:
     needs:
     - resolve_versions
     if: inputs.target == 'all' || inputs.target == 'stable'
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
     - id: generate-token
       name: steps::authenticate_as_zippy

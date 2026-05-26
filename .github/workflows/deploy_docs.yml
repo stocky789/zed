@@ -39,7 +39,7 @@ jobs:
   deploy_docs:
     if: github.repository_owner == 'zed-industries'
     name: Build and Deploy Docs
-    runs-on: namespace-profile-16x32-ubuntu-2204
+    runs-on: ubuntu-22.04
     env:
       DOCS_AMPLITUDE_API_KEY: ${{ secrets.DOCS_AMPLITUDE_API_KEY }}
       DOCS_CONSENT_IO_INSTANCE: ${{ secrets.DOCS_CONSENT_IO_INSTANCE }}
@@ -147,7 +147,7 @@ jobs:
         command: deploy .cloudflare/docs-proxy/src/worker.js
     - name: deploy_docs::docs_deploy_steps::upload_wrangler_logs
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: wrangler_logs
         path: /home/runner/.config/.wrangler/logs/

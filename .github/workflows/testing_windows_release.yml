@@ -39,19 +39,19 @@ jobs:
         run: |
           git config --system core.longpaths true
           New-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1 -PropertyType DWord -Force
-        shell: pwsh
+        shell: powershell
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
-        shell: pwsh
+        shell: powershell
       - name: Build Windows installer
         run: script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
-        shell: pwsh
-      - uses: actions/upload-artifact@v4
+        shell: powershell
+      - uses: actions/upload-artifact@v3
         with:
           name: Zed-${{ matrix.arch }}.exe
           path: target/Zed-${{ matrix.arch }}.exe
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: zed-remote-server-windows-${{ matrix.arch }}.zip
           path: target/zed-remote-server-windows-${{ matrix.arch }}.zip
@@ -63,23 +63,98 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v3
         with:
-          pattern: '*'
           path: artifacts
-          merge-multiple: true
       - name: Upload Windows assets to testing release
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN || github.token }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
           TAG: testing-latest
+          TARGET: ${{ github.sha }}
         run: |
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" \
-              --title "Testing latest" \
-              --notes "Automated build from testing at $GITHUB_SHA." \
-              --target "$GITHUB_SHA" \
-              --prerelease \
-              --latest=false
-          fi
-          gh release upload "$TAG" artifacts/* --clobber
+          python3 <<'PY'
+          import json
+          import mimetypes
+          import os
+          from pathlib import Path
+          import uuid
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ["GITEA_TOKEN"]
+          server_url = os.environ["SERVER_URL"].rstrip("/")
+          repository = os.environ["REPOSITORY"]
+          tag = os.environ["TAG"]
+          target = os.environ["TARGET"]
+          api_root = f"{server_url}/api/v1/repos/{repository}"
+
+          def request(method, url, data=None, headers=None):
+              headers = dict(headers or {})
+              headers["Authorization"] = f"token {token}"
+              request = urllib.request.Request(url, data=data, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(request) as response:
+                      body = response.read()
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode("utf-8", errors="replace")
+                  raise SystemExit(f"{method} {url} failed: HTTP {error.code}\n{body}")
+              return json.loads(body.decode("utf-8")) if body else None
+
+          def get_release():
+              url = f"{api_root}/releases/tags/{urllib.parse.quote(tag, safe='')}"
+              try:
+                  return request("GET", url)
+              except SystemExit as error:
+                  if "HTTP 404" not in str(error):
+                      raise
+                  payload = {
+                      "tag_name": tag,
+                      "target_commitish": target,
+                      "name": "Testing latest",
+                      "body": f"Automated build from testing at {target}.",
+                      "draft": False,
+                      "prerelease": True,
+                  }
+                  return request(
+                      "POST",
+                      f"{api_root}/releases",
+                      json.dumps(payload).encode("utf-8"),
+                      {"Content-Type": "application/json"},
+                  )
+
+          def upload_asset(release_id, path):
+              name = path.name
+              for asset in release.get("assets", []):
+                  if asset.get("name") == name:
+                      request("DELETE", f"{api_root}/releases/assets/{asset['id']}")
+
+              boundary = "----gitea-boundary-" + uuid.uuid4().hex
+              content_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
+              file_bytes = path.read_bytes()
+              body = b"".join([
+                  f"--{boundary}\r\n".encode(),
+                  f'Content-Disposition: form-data; name="attachment"; filename="{name}"\r\n'.encode(),
+                  f"Content-Type: {content_type}\r\n\r\n".encode(),
+                  file_bytes,
+                  f"\r\n--{boundary}--\r\n".encode(),
+              ])
+              quoted_name = urllib.parse.quote(name)
+              request(
+                  "POST",
+                  f"{api_root}/releases/{release_id}/assets?name={quoted_name}",
+                  body,
+                  {"Content-Type": f"multipart/form-data; boundary={boundary}"},
+              )
+              print(f"Uploaded {name}")
+
+          release = get_release()
+          release_id = release["id"]
+          files = [path for path in Path("artifacts").rglob("*") if path.is_file()]
+          if not files:
+              raise SystemExit("No artifacts found to publish")
+          for path in files:
+              upload_asset(release_id, path)
+          PY

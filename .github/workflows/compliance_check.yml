@@ -10,7 +10,7 @@ on:
 jobs:
   scheduled_compliance_check:
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions')
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
     - name: steps::checkout_repo
       uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -44,7 +44,7 @@ jobs:
       continue-on-error: true
     - name: run_bundling::upload_artifact
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: compliance-report-${{ github.ref_name }}.md
         path: compliance-report-${{ github.ref_name }}.md

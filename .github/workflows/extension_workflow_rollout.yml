@@ -17,7 +17,7 @@ on:
 jobs:
   fetch_extension_repos:
     if: (github.repository_owner == 'zed-industries' || github.repository_owner == 'zed-extensions') && github.ref == 'refs/heads/main'
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
     - name: checkout_zed_repo
       uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -91,7 +91,7 @@ jobs:
       env:
         COMMIT_SHA: ${{ github.sha }}
     - name: extension_workflow_rollout::fetch_extension_repos::upload_workflow_files
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@v3
       with:
         name: extension-workflow-files
         path: extensions/workflows/**/*.yml
@@ -106,7 +106,7 @@ jobs:
     needs:
     - fetch_extension_repos
     if: needs.fetch_extension_repos.outputs.repos != '[]'
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         repo: ${{ fromJson(needs.fetch_extension_repos.outputs.repos) }}
@@ -132,7 +132,7 @@ jobs:
         repository: zed-extensions/${{ matrix.repo }}
         token: ${{ steps.generate-token.outputs.token }}
     - name: extension_workflow_rollout::rollout_workflows_to_extension::download_workflow_files
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@v3
       with:
         name: extension-workflow-files
         path: workflow-files
@@ -205,7 +205,7 @@ jobs:
     needs:
     - rollout_workflows_to_extension
     if: inputs.filter-repos == ''
-    runs-on: namespace-profile-2x4-ubuntu-2404
+    runs-on: ubuntu-24.04
     steps:
     - id: generate-token
       name: steps::generate_token
