@@ -142,6 +142,23 @@ jobs:
             Start-Sleep -Seconds (15 * $attempt)
           }
         shell: powershell
+      - name: Install CMake
+        run: |
+          $cmakeBin = "C:\Program Files\CMake\bin"
+          if (-not (Get-Command cmake.exe -ErrorAction SilentlyContinue)) {
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress -y
+              if ($LASTEXITCODE -eq 0) { break }
+              if ($attempt -eq 3) { exit $LASTEXITCODE }
+              Start-Sleep -Seconds (15 * $attempt)
+            }
+          }
+          if (Test-Path $cmakeBin) {
+            $cmakeBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            $env:PATH = "$cmakeBin;$env:PATH"
+          }
+          cmake --version
+        shell: powershell
       - name: Build Windows installer
         run: |
           $pwsh = "C:\Program Files\PowerShell\7\pwsh.exe"
@@ -151,7 +168,7 @@ jobs:
 
           @'
           $ErrorActionPreference = "Stop"
-          $env:PATH = "$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
+          $env:PATH = "C:\Program Files\CMake\bin;$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
           Remove-Item Env:CI -ErrorAction SilentlyContinue
           rustc -V
           cargo -V
