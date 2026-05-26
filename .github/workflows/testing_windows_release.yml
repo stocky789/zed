@@ -144,12 +144,22 @@ jobs:
         shell: powershell
       - name: Build Windows installer
         run: |
+          $pwsh = "C:\Program Files\PowerShell\7\pwsh.exe"
+          if (-not (Test-Path $pwsh)) {
+            throw "PowerShell 7 was not found at $pwsh"
+          }
+
+          @'
+          $ErrorActionPreference = "Stop"
           $env:PATH = "$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
           Remove-Item Env:CI -ErrorAction SilentlyContinue
           rustc -V
           cargo -V
           script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
-        shell: pwsh
+          '@ | Set-Content -Path .\run-zed-bundle.ps1 -Encoding UTF8
+
+          & $pwsh -NoLogo -NoProfile -File .\run-zed-bundle.ps1
+        shell: powershell
       - uses: actions/upload-artifact@v3
         with:
           name: Zed-${{ matrix.arch }}.exe
