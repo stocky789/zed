@@ -34,11 +34,15 @@ jobs:
           cache-on-failure: true
           cache-workspace-crates: true
       - name: Install Linux dependencies
-        run: ./script/linux
+        run: |
+          ./script/linux
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - name: Download WASI SDK
         run: ./script/download-wasi-sdk
       - name: Build Linux bundle
-        run: ./script/bundle-linux
+        run: |
+          source "$HOME/.cargo/env"
+          ./script/bundle-linux
       - uses: actions/upload-artifact@v3
         with:
           name: zed-linux-${{ matrix.arch }}.tar.gz
