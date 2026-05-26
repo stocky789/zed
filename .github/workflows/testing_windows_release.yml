@@ -39,14 +39,32 @@ jobs:
         shell: powershell
       - name: Ensure Visual Studio Build Tools
         run: |
-          $candidatePaths = @(
-            "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1",
-            "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\Launch-VsDevShell.ps1",
-            "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\Launch-VsDevShell.ps1",
-            "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1"
-          )
-          if ($candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1) {
-            Write-Host "Visual Studio Build Tools already available"
+          function Find-VsDevShell {
+            $candidatePaths = @(
+              "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\Launch-VsDevShell.ps1",
+              "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\Launch-VsDevShell.ps1",
+              "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\Launch-VsDevShell.ps1",
+              "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Launch-VsDevShell.ps1"
+            )
+
+            $direct = $candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+            if ($direct) { return $direct }
+
+            $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+            if (Test-Path $vswhere) {
+              $installations = & $vswhere -all -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+              foreach ($installation in $installations) {
+                $path = Join-Path $installation "Common7\Tools\Launch-VsDevShell.ps1"
+                if (Test-Path $path) { return $path }
+              }
+            }
+
+            return $null
+          }
+
+          $existing = Find-VsDevShell
+          if ($existing) {
+            Write-Host "Visual Studio Build Tools already available at $existing"
             exit 0
           }
 
@@ -55,19 +73,30 @@ jobs:
             "--quiet",
             "--wait",
             "--norestart",
-            "--nocache",
             "--installPath", "C:\Program Files\Microsoft Visual Studio\2022\BuildTools",
             "--add", "Microsoft.VisualStudio.Workload.VCTools",
             "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-            "--add", "Microsoft.VisualStudio.Component.Windows11SDK.26100"
+            "--add", "Microsoft.VisualStudio.Component.Windows11SDK.26100",
+            "--includeRecommended"
           )
-          $process = Start-Process -FilePath .\vs_buildtools.exe -ArgumentList $arguments -Wait -PassThru
-          if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) {
-            throw "Visual Studio Build Tools installer failed with exit code $($process.ExitCode)"
+          & .\vs_buildtools.exe @arguments
+          $exitCode = $LASTEXITCODE
+          Write-Host "Visual Studio Build Tools installer exited with $exitCode"
+          if ($exitCode -ne 0 -and $exitCode -ne 3010) {
+            throw "Visual Studio Build Tools installer failed with exit code $exitCode"
           }
-          if (-not ($candidatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1)) {
+
+          $installed = Find-VsDevShell
+          if (-not $installed) {
+            Write-Host "Visual Studio installer did not expose Launch-VsDevShell.ps1; dumping installer state"
+            $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+            if (Test-Path $vswhere) {
+              & $vswhere -all -products * -format json
+            }
+            Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio" -Recurse -Filter Launch-VsDevShell.ps1 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
             throw "Visual Studio Build Tools installer completed, but Launch-VsDevShell.ps1 was still not found"
           }
+          Write-Host "Visual Studio Build Tools installed at $installed"
         shell: powershell
       - name: Cache Rust build outputs
         uses: Swatinem/rust-cache@v2
