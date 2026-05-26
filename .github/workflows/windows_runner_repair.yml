@@ -1,0 +1,66 @@
+name: Windows Runner Repair
+
+on:
+  workflow_dispatch:
+
+jobs:
+  repair:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-2022
+    steps:
+      - name: Repair Windows runner prerequisites
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $runnerWork = "C:\Users\Administrator\gitea-act-runner\work"
+          if (Test-Path $runnerWork) {
+            Get-ChildItem -Path $runnerWork -Directory -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -notin @("_temp", "hostexecutor") } |
+              ForEach-Object {
+                Write-Host "Removing cached runner directory $($_.FullName)"
+                Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+              }
+          }
+
+          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          if (-not (Test-Path $setup)) {
+            throw "Visual Studio Installer setup.exe was not found"
+          }
+
+          $installPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+          $arguments = @(
+            "modify",
+            "--installPath", "`"$installPath`"",
+            "--quiet",
+            "--wait",
+            "--norestart",
+            "--add", "Microsoft.VisualStudio.Workload.VCTools",
+            "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "--add", "Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre",
+            "--add", "Microsoft.VisualStudio.Component.VC.14.44.17.14.x86.x64.Spectre",
+            "--add", "Microsoft.VisualStudio.Component.Windows11SDK.26100",
+            "--includeRecommended"
+          )
+          $argumentString = $arguments -join " "
+          Write-Host "Running VS setup modify for $installPath"
+          $process = Start-Process -FilePath $setup -ArgumentList $argumentString -Wait -PassThru
+          Write-Host "VS setup exited with $($process.ExitCode)"
+          if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) {
+            throw "VS setup failed with exit code $($process.ExitCode)"
+          }
+
+          $devShell = Join-Path $installPath "Common7\Tools\Launch-VsDevShell.ps1"
+          if (-not (Test-Path $devShell)) {
+            throw "Launch-VsDevShell.ps1 still missing at $devShell"
+          }
+
+          $spectreLib = Get-ChildItem -Path $installPath -Recurse -Filter vcruntime.lib -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match "[\\/]spectre[\\/]" } |
+            Select-Object -First 1
+          if (-not $spectreLib) {
+            throw "MSVC Spectre vcruntime.lib still missing under $installPath"
+          }
+
+          Write-Host "Verified Visual Studio dev shell: $devShell"
+          Write-Host "Verified Spectre lib: $($spectreLib.FullName)"
