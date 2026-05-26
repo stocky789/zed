@@ -22,8 +22,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       CARGO_INCREMENTAL: 0
-      CARGO_HOME: D:\c
-      CARGO_TARGET_DIR: D:\t
+      CARGO_HOME: C:\c
+      CARGO_TARGET_DIR: C:\t
       CI: ''
     steps:
       - uses: actions/checkout@v4
