@@ -24,6 +24,7 @@ jobs:
       CARGO_INCREMENTAL: 0
       CARGO_HOME: C:\c
       CARGO_TARGET_DIR: C:\t
+      RUSTUP_HOME: C:\rustup
       CI: ''
     steps:
       - uses: actions/checkout@v4
@@ -31,16 +32,34 @@ jobs:
           ref: testing
       - name: Set up Rust
         run: |
+          $ErrorActionPreference = "Stop"
           $cargoBin = Join-Path $env:CARGO_HOME "bin"
-          if (-not (Test-Path (Join-Path $cargoBin "rustc.exe"))) {
-            Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
-            .\rustup-init.exe -y --default-toolchain stable
+          New-Item -ItemType Directory -Force -Path $env:CARGO_HOME, $env:RUSTUP_HOME, $cargoBin | Out-Null
+
+          $rustc = Join-Path $cargoBin "rustc.exe"
+          $cargo = Join-Path $cargoBin "cargo.exe"
+          $rustIsUsable = $false
+          if ((Test-Path $rustc) -and (Test-Path $cargo)) {
+            try {
+              & $rustc -V
+              & $cargo -V
+              $rustIsUsable = $true
+            } catch {
+              Write-Host "Existing Rust install is unusable: $($_.Exception.Message)"
+            }
           }
+
+          if (-not $rustIsUsable) {
+            Remove-Item -Path (Join-Path $cargoBin "*.exe") -Force -ErrorAction SilentlyContinue
+            Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
+            .\rustup-init.exe -y --default-toolchain stable --profile minimal
+          }
+
           $env:PATH = "$cargoBin;$env:USERPROFILE\.cargo\bin;$env:PATH"
           $cargoBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          rustc -V
-          cargo -V
+          & $rustc -V
+          & $cargo -V
         shell: powershell
       - name: Ensure Visual Studio Build Tools
         run: |
