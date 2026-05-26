@@ -128,6 +128,20 @@ jobs:
             Start-Sleep -Seconds (15 * $attempt)
           }
         shell: powershell
+      - name: Install PowerShell 7
+        run: |
+          if (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
+            Write-Host "PowerShell 7 already available"
+            exit 0
+          }
+
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            choco install powershell-core --no-progress -y
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($attempt -eq 3) { exit $LASTEXITCODE }
+            Start-Sleep -Seconds (15 * $attempt)
+          }
+        shell: powershell
       - name: Build Windows installer
         run: |
           $env:PATH = "$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
@@ -135,7 +149,7 @@ jobs:
           rustc -V
           cargo -V
           script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
-        shell: powershell
+        shell: pwsh
       - uses: actions/upload-artifact@v3
         with:
           name: Zed-${{ matrix.arch }}.exe
