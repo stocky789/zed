@@ -101,23 +101,20 @@ jobs:
           }
 
           $installPath = Find-VsInstallationPath
-          Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe
-          $arguments = @(
-            "--quiet",
-            "--wait",
-            "--norestart",
-            "--installPath=$installPath",
-            "--add", "Microsoft.VisualStudio.Workload.VCTools",
-            "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-            "--add", "Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre",
-            "--add", "Microsoft.VisualStudio.Component.Windows11SDK.26100",
-            "--includeRecommended"
-          )
-          & .\vs_buildtools.exe @arguments
-          $exitCode = $LASTEXITCODE
-          Write-Host "Visual Studio Build Tools installer exited with $exitCode"
+          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          if (Test-Path $setup) {
+            $argumentString = "modify --installPath `"$installPath`" --quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --includeRecommended"
+            $process = Start-Process -FilePath $setup -ArgumentList $argumentString -Wait -PassThru
+            $exitCode = $process.ExitCode
+          } else {
+            Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe
+            $argumentString = "--quiet --wait --norestart --installPath `"$installPath`" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --includeRecommended"
+            $process = Start-Process -FilePath .\vs_buildtools.exe -ArgumentList $argumentString -Wait -PassThru
+            $exitCode = $process.ExitCode
+          }
+          Write-Host "Visual Studio installer exited with $exitCode"
           if ($exitCode -ne 0 -and $exitCode -ne 3010) {
-            throw "Visual Studio Build Tools installer failed with exit code $exitCode"
+            throw "Visual Studio installer failed with exit code $exitCode"
           }
 
           $installed = Find-VsDevShell
