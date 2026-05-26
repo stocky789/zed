@@ -125,7 +125,7 @@ jobs:
               name = path.name
               for asset in release.get("assets", []):
                   if asset.get("name") == name:
-                      request("DELETE", f"{api_root}/releases/assets/{asset['id']}")
+                      request("DELETE", f"{api_root}/releases/{release_id}/assets/{asset['id']}")
 
               boundary = "----gitea-boundary-" + uuid.uuid4().hex
               content_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
