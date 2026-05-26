@@ -31,11 +31,16 @@ jobs:
           ref: testing
       - name: Set up Rust
         run: |
-          if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) {
+          $cargoBin = Join-Path $env:CARGO_HOME "bin"
+          if (-not (Test-Path (Join-Path $cargoBin "rustc.exe"))) {
             Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
             .\rustup-init.exe -y --default-toolchain stable
           }
+          $env:PATH = "$cargoBin;$env:USERPROFILE\.cargo\bin;$env:PATH"
+          $cargoBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          rustc -V
+          cargo -V
         shell: powershell
       - name: Ensure Visual Studio Build Tools
         run: |
@@ -124,7 +129,11 @@ jobs:
           }
         shell: powershell
       - name: Build Windows installer
-        run: script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
+        run: |
+          $env:PATH = "$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
+          rustc -V
+          cargo -V
+          script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
         shell: powershell
       - uses: actions/upload-artifact@v3
         with:
