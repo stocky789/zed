@@ -131,6 +131,7 @@ jobs:
       - name: Build Windows installer
         run: |
           $env:PATH = "$env:CARGO_HOME\bin;$env:USERPROFILE\.cargo\bin;$env:PATH"
+          Remove-Item Env:CI -ErrorAction SilentlyContinue
           rustc -V
           cargo -V
           script/bundle-windows.ps1 -Architecture ${{ matrix.arch }}
